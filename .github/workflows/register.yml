@@ -1,0 +1,84 @@
+name: GDUDA User Register — KR-JEJU-JEJU-IDO1-L5
+
+on:
+  repository_dispatch:
+    types: [USER_REGISTER, USER_UPDATE, USER_DEACTIVATE]
+
+jobs:
+  process:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Process event
+        run: |
+          python3 - << 'PY'
+          import json, hashlib, glob
+          from datetime import datetime, timezone
+
+          payload = json.loads(r"""${{ toJson(github.event.client_payload) }}"""  )
+          event   = '${{ github.event.action }}'
+          now     = datetime.now(timezone.utc).isoformat()
+
+          with open('routing_table.json','r',encoding='utf-8') as f:
+              rt = json.load(f)
+
+          guid = payload.get('guid','')
+          existing = next((u for u in rt['users'] if u['guid']==guid), None)
+
+          if event == 'USER_REGISTER' and not existing:
+              rt['users'].append({
+                  'guid'           : payload['guid'],
+                  'gopang_id'      : payload.get('gopang_id',''),
+                  'display'        : payload.get('display',''),
+                  'l1_node'        : payload.get('l1_node',''),
+                  'public_key_hash': payload.get('public_key_hash',''),
+                  'endpoint'       : payload.get('endpoint',''),
+                  'registered_at'  : now,
+                  'last_seen'      : now,
+                  'status'         : 'active'
+              })
+              rt['total_users'] = len(rt['users'])
+          elif event == 'USER_DEACTIVATE' and existing:
+              existing['status'] = 'inactive'
+
+          rt['last_updated'] = now
+          with open('routing_table.json','w',encoding='utf-8') as f:
+              json.dump(rt, f, ensure_ascii=False, indent=2)
+
+          blocks = sorted(glob.glob('blocks/block_*.json'))
+          prev   = json.load(open(blocks[-1])) if blocks else {'hash':'0'*64}
+          bnum   = len(blocks)
+          block  = {
+              'block_number': bnum, 'block_type': event,
+              'node_id': 'KR-JEJU-JEJU-IDO1-L5', 'layer': 5,
+              'timestamp': now, 'data': payload,
+              'prev_hash': prev['hash'], 'nonce': 0, 'openhash_tx': 'PENDING'
+          }
+          block['hash'] = hashlib.sha256(
+              json.dumps(block, ensure_ascii=False, sort_keys=True).encode()
+          ).hexdigest()
+          with open(f'blocks/block_{bnum:04d}.json','w',encoding='utf-8') as f:
+              json.dump(block, f, ensure_ascii=False, indent=2)
+
+          status = {
+              'node_id': 'KR-JEJU-JEJU-IDO1-L5', 'layer': 5,
+              'total_blocks': bnum+1, 'latest_hash': block['hash'],
+              'latest_block': bnum, 'chain_valid': True,
+              'last_verified': now, 'openhash_tx': 'PENDING', 'ilmv_status': 'NORMAL'
+          }
+          with open('chain_status.json','w',encoding='utf-8') as f:
+              json.dump(status, f, ensure_ascii=False, indent=2)
+          print(f'Block {bnum} created: {block["hash"][:20]}...')
+          PY
+
+      - name: Commit
+        run: |
+          git config user.name  "openhash-node[bot]"
+          git config user.email "openhash@nounweb.github.io"
+          git add routing_table.json blocks/ chain_status.json
+          git diff --staged --quiet || git commit -m "block: ${{ github.event.action }} [skip ci]"
+          git push
+

@@ -1,0 +1,19 @@
+{
+  "version"     : "1.0.0",
+  "node_id"     : "KR-JEJU-JEJU-IDO1-L5",
+  "last_updated": "2026-05-21T00:00:00Z",
+  "total_users" : 1,
+  "users": [
+    {
+      "guid"       : "3f7a9b2e8c1d4f6a9b3e7d2c5a8f1b4e",
+      "gopang_id"  : "체제수리공",
+      "display"    : "도영민",
+      "l1_node"    : "KR-JEJU-JEJU-IDO1",
+      "public_key_hash": "sha256_of_public_key_placeholder",
+      "endpoint"   : "https://nounweb.github.io/gopang_v2",
+      "registered_at": "2026-05-21T00:00:00Z",
+      "last_seen"  : "2026-05-21T00:00:00Z",
+      "status"     : "active"
+    }
+  ]
+}

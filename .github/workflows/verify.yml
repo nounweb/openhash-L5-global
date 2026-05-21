@@ -1,0 +1,78 @@
+name: ILMV Chain Verify — KR-JEJU-JEJU-IDO1-L5
+
+on:
+  schedule:
+    - cron: '0 * * * *'   # 매 시간 실행
+  workflow_dispatch:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      issues: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Verify hash chain
+        id: verify
+        run: |
+          python3 - << 'PY'
+          import json, hashlib, glob, sys
+
+          blocks = sorted(glob.glob('blocks/block_*.json'))
+          print(f'Verifying {len(blocks)} blocks...')
+          valid = True
+
+          for i in range(1, len(blocks)):
+              with open(blocks[i-1]) as f: prev = json.load(f)
+              with open(blocks[i])   as f: curr = json.load(f)
+
+              if curr.get('prev_hash') != prev.get('hash'):
+                  print(f'CHAIN BROKEN at block {i}: prev_hash mismatch')
+                  valid = False; break
+
+              stored = curr.pop('hash', '')
+              recomp = hashlib.sha256(
+                  json.dumps(curr, ensure_ascii=False, sort_keys=True).encode()
+              ).hexdigest()
+              curr['hash'] = stored
+
+              if stored != recomp:
+                  print(f'HASH INVALID at block {i}')
+                  valid = False; break
+
+          status_msg = 'NORMAL' if valid else 'ALERT'
+          print(f'Chain status: {status_msg}')
+
+          with open('chain_status.json','r') as f: cs = json.load(f)
+          from datetime import datetime, timezone
+          cs['chain_valid']   = valid
+          cs['last_verified'] = datetime.now(timezone.utc).isoformat()
+          cs['ilmv_status']   = status_msg
+          with open('chain_status.json','w') as f:
+              json.dump(cs, f, ensure_ascii=False, indent=2)
+
+          if not valid: sys.exit(1)
+          PY
+
+      - name: Commit verification result
+        run: |
+          git config user.name  "openhash-node[bot]"
+          git config user.email "openhash@nounweb.github.io"
+          git add chain_status.json
+          git diff --staged --quiet || git commit -m "verify: ILMV check [skip ci]"
+          git push
+
+      - name: Create issue on failure
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.create({
+              owner: context.repo.owner,
+              repo:  context.repo.repo,
+              title: '🚨 ILMV Alert: Chain integrity failure — KR-JEJU-JEJU-IDO1-L5',
+              body:  '해시체인 무결성 검증 실패. 즉시 조사 필요.',
+              labels: ['openhash-alert','ilmv']
+            })

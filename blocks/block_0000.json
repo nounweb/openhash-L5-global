@@ -1,0 +1,15 @@
+{
+  "block_number": 0,
+  "block_type": "GENESIS",
+  "node_id": "KR-JEJU-JEJU-IDO1-L5",
+  "layer": 5,
+  "timestamp": "2026-05-21T00:00:00Z",
+  "data": {
+    "event": "NODE_INITIALIZED",
+    "message": "OpenHash L5-global node genesis block"
+  },
+  "prev_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+  "nonce": 0,
+  "openhash_tx": "GENESIS",
+  "hash": "44729312fa3350d52ba3dcec701d1d21d855bd1aaa8524c6f8f633ae17542d37"
+}

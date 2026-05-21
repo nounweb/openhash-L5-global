@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>OpenHash L5-global Node API</title>
+<style>
+body{font-family:monospace;background:#0d1117;color:#c9d1d9;padding:20px;}
+h1{color:#58a6ff;}
+.badge{display:inline-block;padding:3px 10px;border-radius:12px;font-size:12px;font-weight:700;}
+.l1{background:#1a3a1a;color:#3fb950;}
+.l2{background:#1a2a3a;color:#58a6ff;}
+.l3{background:#2a1a3a;color:#bc8cff;}
+.l4{background:#3a2a1a;color:#e3b341;}
+.l5{background:#3a1a1a;color:#f85149;}
+pre{background:#161b22;padding:16px;border-radius:6px;overflow-x:auto;}
+.endpoint{color:#58a6ff;text-decoration:underline;cursor:pointer;}
+</style>
+</head>
+<body>
+<h1>⛓ OpenHash Node</h1>
+<p>
+  <span class="badge l5">Layer 5</span>
+  &nbsp;<strong>KR-JEJU-JEJU-IDO1-L5</strong>
+</p>
+<h2>📡 API Endpoints</h2>
+<pre>
+GET /node.json           → 노드 정보
+GET /routing_table.json  → 사용자 라우팅 테이블
+GET /blocks/block_NNNN.json → 개별 블록
+GET /chain_status.json   → 체인 상태 요약
+</pre>
+<h2>🔗 Quick Links</h2>
+<ul>
+  <li><a href="../node.json" style="color:#58a6ff;">node.json</a></li>
+  <li><a href="../routing_table.json" style="color:#58a6ff;">routing_table.json</a></li>
+  <li><a href="../blocks/block_0000.json" style="color:#58a6ff;">Genesis Block</a></li>
+  <li><a href="../chain_status.json" style="color:#58a6ff;">Chain Status</a></li>
+</ul>
+<h2>🔍 사용자 검색 (GDUDA)</h2>
+<input id="q" placeholder="고팡 ID 입력..." style="padding:8px;width:300px;background:#161b22;color:#c9d1d9;border:1px solid #30363d;border-radius:6px;">
+<button onclick="lookup()" style="padding:8px 16px;background:#238636;color:#fff;border:none;border-radius:6px;cursor:pointer;">검색</button>
+<pre id="result">검색 결과가 여기에 표시됩니다.</pre>
+<script>
+async function lookup(){
+  const q = document.getElementById('q').value.trim();
+  if(!q) return;
+  try{
+    const r = await fetch('../routing_table.json');
+    const data = await r.json();
+    const found = data.users.find(u => u.gopang_id === q || u.guid.startsWith(q));
+    document.getElementById('result').textContent =
+      found ? JSON.stringify(found, null, 2) : '사용자를 찾을 수 없습니다.\n상위 계층으로 라우팅 중...';
+  }catch(e){
+    document.getElementById('result').textContent = 'Error: '+e.message;
+  }
+}
+</script>
+<hr style="border-color:#30363d;margin-top:40px;">
+<p style="color:#484f58;font-size:12px;">
+  OpenHash Network v2.2 · AI City Inc. · 제주특별자치도<br>
+  Layer 5 Node · KR-JEJU-JEJU-IDO1-L5
+</p>
+</body>
+</html>
